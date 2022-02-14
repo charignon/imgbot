@@ -123,12 +123,12 @@
     (println "Starting")
     (loop []
       (Thread/sleep 500)
-      (let [image-files (map str (fs/glob (-> opts :options :input-folder) "*{.heic,HEIC,png}"))]
+      (let [image-files (map str (fs/glob (expand-home (-> opts :options :input-folder)) "*{.heic,HEIC,png}"))]
         (when-not (empty? image-files)
           (doall (map #(process-file
                         %
-                        (-> opts :options :dest-folder)
-                        (-> opts :options :backup-folder)
+                        (expand-home (-> opts :options :dest-folder))
+                        (expand-home (-> opts :options :backup-folder))
                         (-> opts :options :mb-size))
                       image-files))
         (recur))))))
