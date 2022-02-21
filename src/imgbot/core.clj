@@ -123,12 +123,16 @@
     (println "Starting")
     (loop []
       (Thread/sleep 500)
-      (let [image-files (map str (fs/glob (expand-home (-> opts :options :input-folder)) "*{.heic,HEIC,png}"))]
-        (when-not (empty? image-files)
-          (doall (map #(process-file
-                        %
-                        (expand-home (-> opts :options :dest-folder))
-                        (expand-home (-> opts :options :backup-folder))
-                        (-> opts :options :mb-size))
-                      image-files))
-        (recur))))))
+      (try
+        (let [image-files (map str (fs/glob (expand-home (-> opts :options :input-folder)) "*{.heic,HEIC,png}"))]
+          (when-not (empty? image-files)
+            (doall (pmap #(process-file
+                           %
+                           (expand-home (-> opts :options :dest-folder))
+                           (expand-home (-> opts :options :backup-folder))
+                           (-> opts :options :mb-size))
+                         image-files))))
+        ;; Testing this for now
+        (catch Exception _ (println "Crashed")))
+      (recur))))
+
