@@ -5,24 +5,36 @@
             [clojure.tools.cli :refer [parse-opts]]
             [babashka.process :refer [check $]]))
 
-(defn expand-home [s]
+(defn expand-home
+  "Expand ~ in the given path"
+  [s]
   (if (.startsWith s "~")
     (clojure.string/replace-first s "~" (System/getProperty "user.home"))
     s))
 
-(defn fname-heic->png [file]
+(defn fname-heic->png
+  "Replace HEIC extension by png"
+  [file]
   (str/replace file #"HEIC|heic" "png"))
 
-(defn str->int [e]
+(defn str->int
+  "Convert a string to an int"
+  [e]
   (Integer/parseInt e))
 
-(defn size-kb [file]
+(defn size-kb
+  "Return the size of a file in kb"
+  [file]
   (-> ($ bash -c ~(str "du -k '" file  "' | cut  -f1")) deref check :out slurp str/trim str->int))
 
-(defn size-mb [file]
+(defn size-mb
+  "Return the size of a file in Mb"
+  [file]
    (/ (size-kb file) 1000.0))
 
-(defn with-timeout [timeout-ms callback]
+(defn with-timeout
+  "Call a function with a timeout"
+  [timeout-ms callback]
   (try
     (let [fut (future (callback))
           _ (print "Calling the command in a future")
@@ -34,7 +46,9 @@
       (print "Caught ya!")
       ::timed-out)))
 
-(defn with-retry [{:keys [retries timeout operation id] :as d}]
+(defn with-retry
+  "Perform an operation up to retires time with the given timeout"
+  [{:keys [retries timeout operation id] :as d}]
   (loop [try 1
          acc (assoc d :aborted false :retries 0 :res nil)]
     (if (= (dec try) retries)
@@ -52,7 +66,9 @@
                      (assoc acc :retries try)))))))))
 
 
-(defn resize-png [file max-size-mb]
+(defn resize-png
+  "Resize the given png image to the given size"
+  [file max-size-mb]
   (loop [size (size-mb file)]
     (println file " ==> " size)
     (if (< size max-size-mb)
@@ -65,7 +81,9 @@
            :operation #(-> @($ mogrify -resize "50%" ~file) check :out slurp str/trim)})
         (recur (size-mb file))))))
 
-(defn heic->png! [file]
+(defn heic->png!
+  "Convert a heic file to png"
+  [file]
   (with-retry
     {:retries 3
      :timeout 8000
